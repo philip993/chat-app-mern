@@ -1,13 +1,21 @@
 const express = require('express');
 const http = require('http');
 const socketio = require('socket.io');
+const mongoose = require('mongoose');
 
 const app = express();
 const server = http.createServer(app);
 const io = socketio(server);
+global._io = io;
 
 // import routes
 const chats = require('./backend/Chat/chatRoutes');
+
+// MongoDB
+mongoose
+  .connect('mongodb://localhost/chat-app', { useNewUrlParser: true })
+  .then((response) => console.log('Connected to MongoDb..'))
+  .catch((err) => console.log('Could not connect to MongoDB..'));
 
 // CORS
 app.use((req, res, next) => {

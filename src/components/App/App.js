@@ -10,7 +10,7 @@ const socket = io.connect('http://localhost:4000');
 
 const App = () => {
   useEffect(() => {
-    socket.on('message', (message) => {
+    socket.on('welcome', (message) => {
       console.log(message);
     });
   }, []);

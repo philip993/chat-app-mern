@@ -12,7 +12,7 @@ const composeEnhancers =
     : compose;
 
 // Use mulitple middlewares
-const middlewares = [thunk, logger];
+const middlewares = [thunk];
 const enhancer = composeEnhancers(applyMiddleware(...middlewares));
 // Create store
 const store = createStore(rootReducer, enhancer);

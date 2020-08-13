@@ -6,12 +6,14 @@ const mongoose = require('mongoose');
 const app = express();
 const server = http.createServer(app);
 const io = socketio(server);
-global._io = io;
+const { Chat } = require('./backend/Chat/chatModel');
 
 // import routes
-const chats = require('./backend/Chat/chatRoutes');
+// const chats = require('./backend/Chat/chatRoutes');
 
 // MongoDB
+
+// connect to Compass
 mongoose
   .connect('mongodb://localhost/chat-app', { useNewUrlParser: true })
   .then((response) => console.log('Connected to MongoDb..'))
@@ -19,7 +21,7 @@ mongoose
 
 // CORS
 app.use((req, res, next) => {
-  res.header('Access-Controll-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Origin', '*');
   res.header(
     'Access-Control-Allow-Headers',
     'Authorization, X-Requested-With, Accept '
@@ -28,19 +30,56 @@ app.use((req, res, next) => {
   next();
 });
 // use routes
-app.use('/chats', chats);
+// app.use('/chats', chats);
+app.use('/chats', (req, res) => {
+  Chat.find({})
+    .then((chats) => {
+      res.status(200).json({
+        chats,
+      });
+    })
+    .catch((err) => {
+      console.log(err);
+      res.status(500).json({
+        msg: 'CANNOT LOAD MESSAGES!',
+      });
+    });
+});
 
 io.on('connection', (socket) => {
   // Welcome message from Server
   console.log('Connection: ' + socket.id);
-  socket.emit('message', `ChatApp Bot: Welcome to Chat App!`);
+  socket.emit('welcome', `ChatApp Bot: Welcome to Chat App!`);
 
   // Broadcast when user connects
-  socket.broadcast.emit('message', 'USER has joined chat...');
+  socket.broadcast.emit('userEnter', 'USER has joined chat...');
+
+  // Listen for welcome
+  socket.on('welcome', (msg) => {
+    console.log(msg);
+  });
 
   // Listen for message
   socket.on('chatMessage', (msg) => {
-    io.emit('message', msg);
+    Chat.create({ message: msg }, (err, success) => {
+      if (err) {
+        return err;
+      } else {
+        console.log('successs');
+        io.emit('message', msg);
+
+        Chat.find({}, (err, success) => {
+          if (err) {
+            return err;
+          } else {
+            console.log(success);
+            const msg = success.map((m) => m.message);
+            socket.emit('message', msg);
+          }
+        });
+      }
+    });
+
     console.log(msg);
   });
 
@@ -53,3 +92,5 @@ io.on('connection', (socket) => {
 
 const port = process.env.PORT || 4000;
 server.listen(port, () => console.log(`Listening on port ${port}.`));
+
+module.exports = io;
